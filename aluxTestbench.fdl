@@ -1,0 +1,43 @@
+dp alu(
+	in A, B : tc(32);
+	in s: ns(2);
+
+	out C : tc(32);
+	out neg: ns(1);
+	out zero: ns(1)
+){
+
+	always{
+		C = (s==0b00) ? A - B :
+		(s==0b01) ? B - A :
+		(s==0b10) ? A : B;
+
+		neg = (C<0) ? 1 : 0;
+		zero = (C==0) ? 1 : 0;
+		// neg = 0;
+		// zero = 0;
+	}
+
+}
+dp testAlu(out A, B:tc(32); out s:ns(2); in C:tc(32); in neg, zero :ns(1)) {
+// always{$display($dec, "Cycle:", $cycle, ", A", A , ", B=", B ,", C=", C, ", s=", s);}
+	always{$display($dec,"in A,B,s: ", A,",", B,",", s, ". out C,zero,neg:", C,",", zero,",", neg, ".");}
+	sfg test_0{A=20; B=20; s=0b00;}
+	sfg test_1{A=20; B=5; s=0b01;}
+	sfg test_2{A=20; B=5; s=0b10;}
+	sfg test_3{A=20; B=5; s=0b11;}
+}
+
+fsm f_testbench(testAlu){
+	initial s0;
+	state s1, s2, s3;
+	@s0(test_0) -> s1;
+	@s1(test_1) -> s2;
+	@s2(test_2) -> s3;
+	@s3(test_3) -> s0;
+}
+
+system myFirstSystem {
+	alu(A, B, s, C, neg, zero);
+	testAlu(A, B, s, C, neg, zero);
+}
