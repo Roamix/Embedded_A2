@@ -1,0 +1,16 @@
+LOAD R0 (0)     #(R0 = 0)
+MOV R3 R0       #(R3 = 0    = i)
+ADDI R4 R0 (31) #(R4 = 31   = i + 31)
+MOV R5 R0       #(R7 = 0)
+
+LOAD R1 R3      #(R1 = xi)
+LOAD R2 R4      #(R2 = xi+31)
+ADD R5 R5 R1    #(R7 = R7 + xi)
+SUB R5 R5 R2    #(R7 = R7 - xi+31)
+SR5 R6 R5       #(Shift right 5 times, i.e. divide by 32. R6 = R5/32)
+STORE 251 R6    #(Store average in memory location 251)
+ADDI R3 (1)     #(Add 1 to input memory index, i. i + 1)
+ADDI R4 (1)     #(Add 1 to input mempory index i+31. i+31 + 1)
+BRANCH 6        #(Loop back to inst-memory address 6 --> LOAD R1 R3)
+
+#mem0-31 = xi

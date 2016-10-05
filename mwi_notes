@@ -1,0 +1,11 @@
+R0 always contains 0
+R1 contains x_i.    The i'th input value
+R2 contains x_i+31  The i+31th input value
+R3 contains the index value i
+R4 contains the index value i+31
+R7 is the output and contains the average of the last 32 inputs.
+
+ALU needs ADDI which adds a constant to a register. Target register is equal to 0 + constant.
+ALU needs a shift operation. (Shift-right in this case at least)
+
+We decided to take the average of the 32 most recent values rather than 30 most recent. With this we can just right-shift the value 5 times, which equals division by 32, rather than having to loop and subtract numerous times.
