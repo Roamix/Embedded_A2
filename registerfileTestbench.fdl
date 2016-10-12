@@ -36,7 +36,12 @@ dp registerfile(
 	}
 }
 
-dp testregisterfile(out asel,bsel,storesel:ns(3); out storeenable:ns(1); out storedata:tc(32); in a_out,b_out:tc(32)) {
+dp testregisterfile(
+	out asel,bsel,storesel:ns(3);
+	out storeenable:ns(1);
+	out storedata:tc(32);
+	in a_out,b_out:tc(32)
+){
 	always{
 		$display($dec,"Inputs: asel:", asel," bsel:", bsel," storesel:", storesel," storedata:",storedata);
 		$display($dec,"Outputs: a:", a_out, " b:", b_out);
