@@ -1,5 +1,7 @@
-dp PC(out pc_out : ns(5)){
-	reg count:ns(5);	
+dp PC(
+	out pc_out:ns(5)
+){
+	reg count:ns(5);
 	always{
 		count = count + 1;
 		pc_out = count;
