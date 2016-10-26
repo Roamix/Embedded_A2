@@ -1,24 +1,30 @@
-LOAD R0 (0)     #(R0 = 0)
-<<<<<<< HEAD
-ADDI R4 R0 (31) #(R4 = 31   = i + 31)
-MOV R5 R0       #(R5 = 0)
-ADDI R7 R0 (251)#(R7 = 251)
-=======
-ADDI R4 R0 (31) 	#(R4 = 31   = i + 31)
-MOV R5 R0       #(R5 = 0)
-ADDI R7 R0 (251)	#(R7 = 251)
->>>>>>> c4b7bddf24487a781a284884a5e854af8ddf0c4f
+LOAD R0 0     			#(R0 = 0)
+ADDI R4 R0 31 			#(R4 = 31   = i + 31)
+MOV R5 R0       		#(R5 = 0)
+ADDI R7 R0 251			#(R7 = 251)
 
-LOAD R1 R3      #(R1 = xi)
-LOAD R2 R4      #(R2 = xi+31)
-ADD R5 R5 R1    #(R7 = R7 + xi)
-SUB R5 R5 R2    #(R7 = R7 - xi+31)
-SR5 R6 R5       #(Shift right 5 times, i.e. divide by 32. R6 = R5/32)
-STORE R7 R6    	#(Store average in memory location R7 (251...n). Store out of range of sample values)
-ADDI R3 R0 (1) 	#(Add 1 to input memory index, i. i + 1)
-ADDI R4 R0 (1)  	#(Add 1 to input mempory index i+31. i+31 + 1)
-ADDI R7 R0 (1)	#(Add 1 to output memory index)
-BRANCH 6        #(Loop back to inst-memory address 6 --> LOAD R1 R3)
+LOAD R1 (R3)      		#(R1 = xi)
+LOAD R2 (R4)      		#(R2 = xi+31)
+ADD R5 R5 R1    		#(R7 = R7 + xi)
+SUB R5 R5 R2    		#(R7 = R7 - xi+31)
+SR5 R6 R5       		#(Shift right 5 times, i.e. divide by 32. R6 = R5/32)
+STORE (R7) R6   		#(Store average in memory location R7 (251...n). Store out of range of sample values)
+ADDI R3 R0 1 			#(Add 1 to input memory index, i. i + 1)
+ADDI R4 R0 1  			#(Add 1 to input mempory index i+31. i+31 + 1)
+ADDI R7 R0 1			#(Add 1 to output memory index)
+BRANCH 6        		#(Loop back to inst-memory address 6 --> LOAD R1 R3)
+
+
+***OP CODE***
+LOAD  :	[000] [REG] [ADR]
+STORE :	[001] [ADR] [REG]
+MOV   :	[010] [REG] [REG]
+ADD   :	[011] [REG] [REG] [REG]
+ADDI  :	[100] [REG] [REG] [CONST]
+SUB   :	[101] [REG] [REG] [REG]
+SR5   :	[110] [REG] [REG]
+BRANCH:	[111] [ADR]
+
 
 
 
@@ -31,8 +37,9 @@ R4 contains the read-input index value i+31
 R5 contains the sum of most 32 most recent input values.
 R6 contains the average, R5 divided by 32 (shifted 5). That is the i'th output, mwi_i.
 
-ALU needs the following instructions:
+CPU needs the following instructions:
 LOAD which places a value from memory into a register.
+STORE which places a value from ALU into memory.
 MOV which takes a value from a register and places into another register.
 ADD which adds values from two registers together and places into a third register.
 SUB which subtracts values from two register together and places into a third register.
