@@ -1,9 +1,7 @@
 LOAD R0 (0)     #(R0 = 0)
-MOV R3 R0       #(R3 = 0    = i)
-MOV R4 R0       #(R3 = 0    = i)
-ADDI R4 (31) 	#(R4 = 31   = i + 31)
+ADDI R4 R0 (31) #(R4 = 31   = i + 31)
 MOV R5 R0       #(R5 = 0)
-ADDI R7 (251)	#(R7 = 251)
+ADDI R7 R0 (251)#(R7 = 251)
 
 LOAD R1 R3      #(R1 = xi)
 LOAD R2 R4      #(R2 = xi+31)
