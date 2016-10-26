@@ -40,16 +40,17 @@ I-type: [OP][R1][I]
 ```
 ***
 
-##Programming Functionality
+## Programming Functionality
 
-###If Statements
+### If Statements
 
 ```c
 if (A>=B) {	cmd_1;
 	cmd_2;
 }cmd_3;
 ```
-```
+
+```Assembler
 1. LOAD R1 30 ; ‘A’
 2. LOAD R2 31 ; ‘B’
 3. SUB R0 R1 R2
@@ -57,7 +58,7 @@ if (A>=B) {	cmd_1;
 6. cmd_2 7. cmd_3
 ```
 
-###While Statements
+### While Statements
 
 ```
 while (A+1!=0) {	cmd_1;	cmd_2;
