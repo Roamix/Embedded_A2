@@ -86,8 +86,8 @@ for (A=0; A<=10; ++A){
 4. SUB R1 R2 R0
 5. BNEG 126. cmd_17. cmd_28. ADDI R1 1 9. BRANCH 4 12.cmd_3
 ```
-##Architecture
-###Processor:
+## Architecture
+### Processor:
 * Control:
 	* Instruction Memory
 		* Stores the program compiled onto it
@@ -97,13 +97,36 @@ for (A=0; A<=10; ++A){
 	* Register(s)
 	* MUX(s)
 
-###(Instruction set
+### Instruction set
 * Defines what the processor is capable of.
 * Depends on available processor modules
 	* (can depend on instruction set)
 
 ##Running Gezel
 Use the commando:```fdlsim code.fdl <cycles>```where code.fdl is the filename and <cycles> is how many clock cycles you want it to run for.
+
+
+## 2.4
+
+* Need to fix instruction set
+* Connect proccessor to rest of embedded system
+	* connect proccessor to bus (*platform.fdl*)
+		* proccessor should be connected to master bus interface, handling the communications protocol.
+		* proccessor communcates two types of Data:
+			* `cmd`: commands that proccessor wants slave to execute
+			* `data`: data related to the command
+		* communication procedure:
+			1. Proccessor sets:
+				* `data -> M-datanin`
+				* `cmd -> M-cmd`
+				* `M_datainrdy` to 1.
+			2. Master interface detects assertion of `M_datainrdy` and transfers cmd and data to bus and allerts:
+				* `M_cmd -> M_bus_cmd`  
+				* `M_datain -> M_bus_dataout`
+				* `M_bus_req` to 1
+			3. All slave interfaces are connecte dto `M_bus_cmd`
+
+
 
 ## Repository Maintenance
 
