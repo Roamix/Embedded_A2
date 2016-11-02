@@ -1,7 +1,6 @@
 dp mux(
 	in A, B: tc(32);
 	in s, E: ns(1);
-
 	out z : tc(32)
 	){
 
@@ -10,12 +9,14 @@ dp mux(
 				(s==0) ? A : B;
 	}
 }
+
 dp testmux(out A, B:tc(32); out s, E:ns(1); in z:tc(32)) {
-	always{$display($dec, "Cycle:", $cycle, ", A=", A , ", B=", B, ", s=", s, ", E=", E, ", z=", z);}
+	always{
+		$display($dec, "Cycle:", $cycle, ", A=", A , ", B=", B, ", s=", s, ", E=", E, ", z=", z);
+	}
 	sfg test_0{A=3; B=6; s=1; E=1;}
 	sfg test_1{A=4; B=5; s=0; E=1;}
 	sfg test_2{A=2; B=1; s=1; E=0;}
-
 }
 
 fsm f_testbench(testmux){

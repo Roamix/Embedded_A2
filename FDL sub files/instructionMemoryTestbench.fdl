@@ -17,7 +17,8 @@ dp fetch(
   sig odata:ns(32);
   use instmem(pc_out, 0, 1, idata, odata);
   always{
-    $display($cycle,"A: " ,pc_out,", I: " , idata,", O: " , odata);
+    $display(" A: " , pc_out,", I: " , idata,", O: " , odata);
+    //$display($cycle," A: " ,pc_out,", I: " , idata,", O: " , odata);
   }
 }
 

@@ -1,0 +1,39 @@
+ipblock instmem(
+  in address : ns(5);
+  in wr,rd   : ns(1);
+  in idata   : ns(32);
+  out odata : ns(32)
+){
+  iptype "ram";
+  ipparm "size=64";
+  ipparm "wl=32";
+  ipparm "file=program.txt";
+}
+
+dp PC(
+	out pc_out:ns(5)
+){
+	reg count:ns(5);
+	always{
+		count = count + 1;
+		pc_out = count;
+		//$display($dec, "->" , pc_out);
+	}
+}
+
+dp fetch(
+  in pc_out:ns(5)
+){
+  reg idata:ns(32);
+  sig odata:ns(32);
+  use instmem(pc_out, 0, 1, idata, odata);
+  always{
+    //$display(" Adress: " , pc_out,", I: " , idata,", O: " , odata);
+		$display(" Adress: " , pc_out, ", Output : " , odata);
+  }
+}
+
+system PCsystem{
+  PC(pc_out);
+  fetch(pc_out);
+}

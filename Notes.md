@@ -45,30 +45,37 @@ I-type: [OP][R1][I]
 ### If Statements
 
 ```c
-if (A>=B) {	cmd_1;
+if (A>=B) {
+	cmd_1;
 	cmd_2;
-}cmd_3;
+}
+cmd_3;
 ```
 
 ```Assembler
 1. LOAD R1 30 ; ‘A’
 2. LOAD R2 31 ; ‘B’
 3. SUB R0 R1 R2
-4. BNEG 75. cmd_1
+4. BNEG 7
+5. cmd_1
 6. cmd_2 7. cmd_3
 ```
 
 ### While Statements
 
 ```
-while (A+1!=0) {	cmd_1;	cmd_2;
-}cmd_3;
+while (A+1!=0) {
+	cmd_1;
+	cmd_2;
+}
+cmd_3;
 ```
 ```
 1. LOAD R1 30 	; ‘A’
 2. LOAD R2 31 	; constant 1
 3. ADD R3 R1 R2
-4. BZERO 85. cmd_1
+4. BZERO 8
+5. cmd_1
 6. cmd_2
 7. BRANCH 3
 8. cmd_3
@@ -79,13 +86,20 @@ while (A+1!=0) {	cmd_1;	cmd_2;
 for (A=0; A<=10; ++A){
 	cmd_1;
 	cmd_2;
-}cmd_3;
+}
+cmd_3;
 ```
 ```
-1. SUB R1 R1 R1 ; ‘A’3. LOAD R2 31 ; constant 10
+1. SUB R1 R1 R1 ; ‘A’
+3. LOAD R2 31 ; constant 10
 4. SUB R1 R2 R0
-5. BNEG 126. cmd_17. cmd_28. ADDI R1 1 9. BRANCH 4 12.cmd_3
+5. BNEG 12
+6. cmd_1
+7. cmd_2
+8. ADDI R1 1 9. BRANCH 4 12.cmd_3
 ```
+
+
 ## Architecture
 ### Processor:
 * Control:
@@ -105,26 +119,52 @@ for (A=0; A<=10; ++A){
 ##Running Gezel
 Use the commando:```fdlsim code.fdl <cycles>```where code.fdl is the filename and <cycles> is how many clock cycles you want it to run for.
 
-
 ## 2.4
 
-* Need to fix instruction set
-* Connect proccessor to rest of embedded system
-	* connect proccessor to bus (*platform.fdl*)
-		* proccessor should be connected to master bus interface, handling the communications protocol.
-		* proccessor communcates two types of Data:
-			* `cmd`: commands that proccessor wants slave to execute
-			* `data`: data related to the command
-		* communication procedure:
-			1. Proccessor sets:
-				* `data -> M-datanin`
-				* `cmd -> M-cmd`
-				* `M_datainrdy` to 1.
-			2. Master interface detects assertion of `M_datainrdy` and transfers cmd and data to bus and allerts:
-				* `M_cmd -> M_bus_cmd`  
-				* `M_datain -> M_bus_dataout`
-				* `M_bus_req` to 1
-			3. All slave interfaces are connecte dto `M_bus_cmd`
+### Todo:
+* Need to fix instruction set (expand with Hjort stuff).
+
+## Processor
+>processor <- master -> bus <- slave -> interfaces
+
+* There are three slaves
+* All slaves are connected to `M_bus_cmd`
+* Each slave has a targetID
+* Processor sends **data** and **commands** to bus
+* Bus passes
+
+The first 4 bits of the M_cmd(32 bits) determine which slave the data and cmd goes to.
+
+Based on the S_bus_cmd (which for all slave 2q is connected to M_bus_cmd)
+
+A particular slave interface reacts on this request by setting S_bus_ack to ’1’ and sends the command to the slave unit.
+
+
+The slave responds to this data.
+This is defined by the targetID signal, which is defined when the slave bus interface is initialized and will never change value.
+The figure also shows the targetID value for each of the 3 slaves in the system.
+
+* Connect processor to rest of embedded system
+	* connect processor to bus (*platform.fdl*)
+		* processor should be connected to master bus interface, handling the communications protocol.
+
+### Communications protocol
+
+* processor communicates two types of Data:
+	* `cmd`: commands that processor wants slave to execute
+	* `data`: data related to the command
+* communication procedure:
+	1. Processor sets:
+		* `data -> M_datanin`
+		* `cmd -> M_cmd`
+		* `M_datainrdy` to 1.
+	2. Master interface detects assertion of `M_datainrdy` and transfers cmd and data to bus and sets:
+		* `M_cmd -> M_bus_cmd`  
+		* `M_datain -> M_bus_dataout`
+		* `M_bus_req` to 1
+	3. The `S_bus_cmd` port on each slave interface is connected to `M_bus_cmd` on the master interface. When a particular slave is identified, it sets `S_bus_ack` to 1. Thereafter the slave interface passes the command to that particular slave unit.
+
+`M_cmd(32) : targetID(4) + command(28)`
 
 
 
