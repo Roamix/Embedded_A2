@@ -166,7 +166,9 @@ The figure also shows the targetID value for each of the 3 slaves in the system.
 
 `M_cmd(32) : targetID(4) + command(28)`
 
-
+> on NOP assert storenable = 0
+> on brsel, either reserve adress bits exclusively for brsel
+>... or share with asel and dissable storenable
 
 ## Repository Maintenance
 
@@ -187,3 +189,33 @@ git add . ; git commit -m "Message to the main"; git push -u origin master
 ```
 git pull origin master
 ```
+
+## Report Structure
+* Front cover
+	- Group: Name, Student No, Signature
+	- List of who did what, implementation and report
+* Design:
+	- Description of selected instruction as well as a table or figure of the complete instruction set.
+	- Reasoning for why these instructions are chosen for the realization of the CPU.
+	- Don't just describe what you have done, also describe why.
+* Implementation
+	- A diagram of the full implementation of the CPU.
+	- A description of
+Et diagram over den fulde implementering af jeres CPU
+En beskrivelse af hvordan I har implementeret instruktionerne og en begrundelse for hvorfor de er implementeret på den måde. I kan nøjes med at beskrive de væsentligste instruktioner, dvs. dem der stiller særlige krav og dem som I mener at have fundet en særlig elegant løsning til.
+Specielt er det vigtigt at der bliver redegjort for konsekvenser af at have ændret på den basale algoritme for at opnå en mere smidig løsning, f.eks. som at lave division ved bit-shift.
+3. Resultater
+
+Performance analyse
+Dokumenter tidsforbruget, f.eks. i form af antal clock cycles der bruges til at udregne et datapunkt.
+Prøv at finde ud af skifteaktiviteten 0->1 og 1->0 for udregningen af et datapunkt - det vil give en indikation om energiforbrug, MEN er på ingen måde eksakt!
+Husk at reflekter over det I kommer frem til - giver det mening, er det som forventet?
+4. Konklusion
+
+Kort konklusion på opgaven. Hvad kunne betale sig at lave som en dedikeret hardware løsning?
+
+
+
+5. Referencer
+
+Her skal listes de referencer som i har brugt - det kan være artikler eller hjemmesider hvor I har fundet inspiration og forståelse.

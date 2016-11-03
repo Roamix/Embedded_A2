@@ -1,0 +1,10 @@
+dp control (
+ in op:ns(3);
+ out brsel:ns(1)
+){
+  always{
+    brsel = (op==111);
+
+
+  }
+}

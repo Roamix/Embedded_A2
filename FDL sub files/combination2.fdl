@@ -1,0 +1,75 @@
+ipblock instmem(
+  in address : ns(5);
+  in wr,rd   : ns(1);
+  in idata   : ns(32);
+  out odata : ns(32)
+){
+  iptype "ram";
+  ipparm "size=64";
+  ipparm "wl=32";
+  ipparm "file=instset.txt";
+}
+
+dp fetch(
+  in address:ns(5);
+  out data:ns(32)
+){
+  reg idata:ns(32);
+  sig odata:ns(32);
+  use instmem(address, 0, 1, idata, odata);
+  always{
+    data = odata;
+    $display($cycle);
+		$display("FETCH: address: " , address, ", instruction : " , odata);
+  }
+}
+
+dp mux(
+	in adder_out:tc(32);
+	in s: ns(1);
+	out z : tc(32)
+){
+	always{
+		z = (s==0) ? adder_out : 5;
+	}
+}
+
+dp control (
+ in op:ns(3);
+ out brsel:ns(1)
+){
+  always{
+    brsel = (op==0b111);
+    $display("CONTROL: operation received: ", $bin ,op, ", brsel=", brsel);
+  }
+}
+
+dp register(
+	in x:tc(32);
+	out z:tc(32)
+){
+	reg rx : tc(32);
+
+	always{
+		rx = x;
+		z = rx;
+    $display("REGISTER: rx=", rx);
+	}
+}
+
+dp increment(
+	in x1: tc(32);
+	out z : tc(32)
+){
+	always{
+		z = x1 + 1;
+	}
+}
+
+system foo {
+  register(C, A);
+  increment(A, B);
+  mux(B,F,C);
+  fetch(A, D);
+  control(D[31:29],F);
+}

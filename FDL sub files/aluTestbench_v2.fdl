@@ -3,19 +3,16 @@ dp alu(
 	in s: ns(2);
 
 	out C : tc(32);
-	out neg: ns(1);
-	out zero: ns(1)
 ){
 
 	always{
-		C = (s==0b00) ? A - B :
+		C = (s==0b00) ? A + B :
 		(s==0b01) ? B - A :
-		(s==0b10) ? A : B;
+		(s==0b10)	? A >> 5:
+		(s==0b11) ? A : 0;
 
 		neg = (C<0) ? 1 : 0;
 		zero = (C==0) ? 1 : 0;
-		// neg = 0;
-		// zero = 0;
 	}
 }
 
