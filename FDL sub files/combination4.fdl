@@ -26,9 +26,9 @@ dp inst(
 }
 
 dp brmux(
-	in adder_out:tc(32);
+	in adder_out:tc(5);
 	in s: ns(1);
-	out z : tc(32)
+	out z : tc(5)
 ){
 	always{
 		z = (s==0) ? adder_out : 3;
@@ -85,10 +85,10 @@ dp control (
 }
 
 dp register(
-	in x:tc(32);
-	out z:tc(32)
+	in x:tc(5);
+	out z:tc(5)
 ){
-	reg rx : tc(32);
+	reg rx : tc(5);
 
 	always{
 		rx = x;
@@ -98,8 +98,8 @@ dp register(
 }
 
 dp increment(
-	in x1: tc(32);
-	out z : tc(32)
+	in x1: tc(5);
+	out z : tc(5)
 ){
 	always{
 		z = x1 + 1;
