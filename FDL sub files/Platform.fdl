@@ -49,7 +49,6 @@ dp addmux(
 	in s: ns(1);
 	out z : tc(32)
 	){
-
 	always{
 		z = (s==0) ? A : B;
     $display("ADDMUX: output=",$dec, z);
@@ -68,15 +67,28 @@ dp datmux(
 	}
 }
 
+dp cmdmux(
+  in A: tc(32);
+  in s: ns(1);
+  out B: tc(32)
+){
+  always{
+    B = (s==0b1) ? A : 0;
+  }
+}
+
 dp control (
  in op:ns(3);
  out brsel:ns(1);
  out storeenable:ns(1);
  out opsel:ns(2);
  out addsel:ns(1);
- out datsel:ns(1)
+ out datsel:ns(1);
+ out storesel:ns(1)
 ){
   always{
+    storesel = (op==0b010) ? 1 : 0;
+
     datsel =  (op==0b001) ? 1 : 0;
 
     addsel = ((op==0b011)|(op==0b110)|(op==0b101)) ? 0 :
@@ -85,7 +97,7 @@ dp control (
     opsel = ((op==0b011) | (op==0b100)) ? 0b00 :
             (op==0b101) ? 0b01 :
             (op==0b110) ? 0b10 :
-            (op==0b010) ? 0b11 : 0b00;
+            ((op==0b010) | (op==0b001)) ? 0b11 : 0b00;
 
     brsel = (op==0b111);
     storeenable = (op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110); //TODO
@@ -180,9 +192,9 @@ dp CPU(
  		// Implement your CPU here.
     //CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy
     sig A,B,C: ns(5);
-    sig datsel,addsel,brsel,storeenable:ns(1);
+    sig storesel, datsel,addsel,brsel,storeenable:ns(1);
     sig opsel : ns(2);
-    sig D,alu_out,addmux_out,datmux_out,a_out,b_out:tc(32);
+    sig D,alu_out,addmux_out,datmux_out,cmdmux_out,a_out,b_out:tc(32);
 
 
     use register(C, A);
@@ -190,16 +202,19 @@ dp CPU(
     use brmux(B,brsel,C);
     use inst(A, D);
     use registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
-    use control(D[31:29], brsel, storeenable, opsel, addsel, datsel);
+    use control(D[31:29], brsel, storeenable, opsel, addsel, datsel, storesel);
     use addmux(b_out, D[22:15], addsel, addmux_out);
     use alu(a_out, addmux_out, opsel, alu_out);
-    use datmux(alu_out, M_dataout, datsel, datmux_out);
+    use datmux(alu_out, D, datsel, datmux_out);//TODO mem_out (D)
+    use cmdmux(b_out, storesel, cmdmux_out);
 
  		// Please remove the code below (it is only added such that that the platform can run without faults)
     always{
+      //$display("CPU: M_datain=", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel);
    		M_datain = alu_out;
-   		M_cmd = 0;
+   		M_cmd = cmdmux_out;
    		M_datainrdy = 0;
+      $display("CPU: M_datain=", M_datain, ", M_cmd=", M_cmd);
     }
 }
 
@@ -886,10 +901,11 @@ system CPUsystem{
   brmux(B,brsel,C);
   inst(A, D);
   registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
-  control(D[31:29], brsel, storeenable, opsel, addsel, datsel);
+  control(D[31:29], brsel, storeenable, opsel, addsel, datsel, storesel);
   addmux(b_out, D[22:15], addsel, addmux_out);
   alu(a_out, addmux_out, opsel, alu_out);
   datmux(alu_out, D, datsel, datmux_out);//TODO mem_out (D)
+  cmdmux(b_out, storesel, cmdmux_out);
 
   CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
 
