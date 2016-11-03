@@ -5,31 +5,202 @@ $option "vcd"
 // CPU
 //////////////
 
+
+
+ipblock instmem(
+  in address : ns(5);
+  in wr,rd   : ns(1);
+  in idata   : ns(32);
+  out odata : ns(32)
+){
+  iptype "ram";
+  ipparm "size=64";
+  ipparm "wl=32";
+  ipparm "file=instset.txt";
+}
+
+dp inst(
+  in address:ns(5);
+  out data:ns(32)
+){
+  reg idata:ns(32);
+  sig odata:ns(32);
+  use instmem(address, 0, 1, idata, odata);
+  always{
+    data = odata;
+    $display($cycle);
+		$display("INST: address: " , address, ", instruction : " ,$bin ,odata[31:29], " ", odata[28:26], " ", odata[25:23], " " , odata[22:20], " ", odata[19:0]);
+    //$display("31:29 : " ,$bin,odata[31:29], ", 28:26 : ", odata[28:26], ", 25:23 : ", odata[25:23]);
+  }
+}
+
+dp brmux(
+	in adder_out:ns(5);
+	in s: ns(1);
+	out z : ns(5)
+){
+	always{
+		z = (s==0) ? adder_out : 3;
+	}
+}
+
+dp addmux(
+	in A, B: tc(32);
+	in s: ns(1);
+	out z : tc(32)
+	){
+
+	always{
+		z = (s==0) ? A : B;
+    $display("ADDMUX: output=",$dec, z);
+	}
+}
+
+dp datmux(
+	in A, B: tc(32);
+	in s: ns(1);
+	out z : tc(32)
+	){
+
+	always{
+		z = (s==0) ? A : B;
+    $display("DATMUX: datsel=",$dec, s);
+	}
+}
+
+dp control (
+ in op:ns(3);
+ out brsel:ns(1);
+ out storeenable:ns(1);
+ out opsel:ns(2);
+ out addsel:ns(1);
+ out datsel:ns(1)
+){
+  always{
+    datsel =  (op==0b001) ? 1 : 0;
+
+    addsel = ((op==0b011)|(op==0b110)|(op==0b101)) ? 0 :
+              (op==0b100) ? 1 : 0;
+
+    opsel = ((op==0b011) | (op==0b100)) ? 0b00 :
+            (op==0b101) ? 0b01 :
+            (op==0b110) ? 0b10 :
+            (op==0b010) ? 0b11 : 0b00;
+
+    brsel = (op==0b111);
+    storeenable = (op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110); //TODO
+    $display("CONTROL: rec: ", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel);
+  }
+}
+
+dp register(
+	in x:ns(5);
+	out z:ns(5)
+){
+	reg rx : ns(5);
+
+	always{
+		rx = x;
+		z = rx;
+    //$display("REGISTER: rx=", rx);
+	}
+}
+
+dp increment(
+	in x1: ns(5);
+	out z : ns(5)
+){
+	always{
+		z = x1 + 1;
+	}
+}
+
+dp registerfile(
+	in asel,bsel,storesel:ns(3);
+	in storeenable:ns(1);
+	in storedata:tc(32);
+
+	out a_out, b_out:tc(32)
+){
+	reg r1,r2,r3,r4,r5,r6,r7:tc(32);
+	always{
+    $display("REGISTERFILE: storesel=",storesel ," asel=", asel, ", bsel=", bsel, ", storeenable=", storeenable);
+    $display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out);
+		//Select A
+		a_out = (asel==1) ? r1 :
+		(asel==2) ? r2 :
+		(asel==3) ? r3 :
+		(asel==4) ? r4 :
+		(asel==5) ? r5 :
+		(asel==6) ? r6 :
+		(asel==7) ? r7 : 0;
+
+		//Select B
+		b_out = (bsel==1) ? r1 :
+		(bsel==2) ? r2 :
+		(bsel==3) ? r3 :
+		(bsel==4) ? r4 :
+		(bsel==5) ? r5 :
+		(bsel==6) ? r6 :
+		(bsel==7) ? r7 : 0;
+
+		r1 = (storeenable & storesel==1) ? storedata : r1;
+		r2 = (storeenable & storesel==2) ? storedata : r2;
+		r3 = (storeenable & storesel==3) ? storedata : r3;
+		r4 = (storeenable & storesel==4) ? storedata : r4;
+		r5 = (storeenable & storesel==5) ? storedata : r5;
+		r6 = (storeenable & storesel==6) ? storedata : r6;
+		r7 = (storeenable & storesel==7) ? storedata : r7;
+	}
+}
+
+dp alu(
+	in A, B : tc(32);
+	in s: ns(2);
+	out C : tc(32)
+){
+	always{
+		C = (s==0b00) ? A + B :
+		(s==0b01) ? B - A :
+		(s==0b10)	? A >> 5:
+		(s==0b11) ? A : 0;
+
+    $display("ALU: alu_out=", C);
+	}
+}
+
 dp CPU(
-           out M_datain : ns(32);
-           out M_cmd : ns(32);
-           out M_datainrdy : ns(1);
-           in M_dataout : ns(32);
-           in M_dataoutrdy : ns(1)
-           //in stall_cpu : ns(1)
-       ){
-       		// Implement your CPU here.
-          //CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy
-          dp brmux(
-            in adder_out:tc(32);
-            in s: ns(1);
-            out z : tc(32)
-          ){
-            always{
-              z = (s==0) ? adder_out : 3;
-            }
-          }
-       		// Please remove the code below (it is only added such that that the platform can run without faults)
-       always{
-       		M_datain = 0;
-       		M_cmd = 0;
-       		M_datainrdy = 0;
-       }
+  out M_datain : ns(32);
+  out M_cmd : ns(32);
+  out M_datainrdy : ns(1);
+  in M_dataout : ns(32);
+  in M_dataoutrdy : ns(1)
+  //in stall_cpu : ns(1)
+){
+ 		// Implement your CPU here.
+    //CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy
+    sig A,B,C: ns(5);
+    sig datsel,addsel,brsel,storeenable:ns(1);
+    sig opsel : ns(2);
+    sig D,alu_out,addmux_out,datmux_out,a_out,b_out:tc(32);
+
+
+    use register(C, A);
+    use increment(A, B);
+    use brmux(B,brsel,C);
+    use inst(A, D);
+    use registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
+    use control(D[31:29], brsel, storeenable, opsel, addsel, datsel);
+    use addmux(b_out, D[22:15], addsel, addmux_out);
+    use alu(a_out, addmux_out, opsel, alu_out);
+    use datmux(alu_out, M_dataout, datsel, datmux_out);
+
+ 		// Please remove the code below (it is only added such that that the platform can run without faults)
+    always{
+   		M_datain = alu_out;
+   		M_cmd = 0;
+   		M_datainrdy = 0;
+    }
 }
 
 //////////////
@@ -270,19 +441,19 @@ dp masterbusinterface(
           out dataoutrdy : ns(1) // signal to master telling that the data on dataout is rdy
           ){
 
-//          $trace(bus_req, "traces/M_bus_req.seq");
-//          $trace(bus_cmd, "traces/M_bus_cmd.seq");
-//          $trace(bus_dataout, "traces/M_bus_dataout.seq");
-//          $trace(bus_ack, "traces/M_bus_ack.seq");
-//          $trace(bus_rdy, "traces/M_bus_rdy.seq");
-//          $trace(bus_datain, "traces/M_bus_datain.seq");
-//          $trace(bus_wait, "traces/M_bus_wait.seq");
+            //$trace(bus_req, "traces/M_bus_req.seq");
+            //$trace(bus_cmd, "traces/M_bus_cmd.seq");
+            //$trace(bus_dataout, "traces/M_bus_dataout.seq");
+            //$trace(bus_ack, "traces/M_bus_ack.seq");
+            //$trace(bus_rdy, "traces/M_bus_rdy.seq");
+            //$trace(bus_datain, "traces/M_bus_datain.seq");
+            //$trace(bus_wait, "traces/M_bus_wait.seq");
 
-//          $trace(datain, "traces/M_datain_int.seq");
-//          $trace(cmd, "traces/M_cmd_int.seq");
-//          $trace(datainrdy, "traces/M_datainrdy_int.seq");
-//          $trace(dataout, "traces/M_dataout_int.seq");
-//          $trace(dataoutrdy, "traces/M_dataoutrdy_int.seq");
+            //$trace(datain, "traces/M_datain_int.seq");
+            //$trace(cmd, "traces/M_cmd_int.seq");
+            //$trace(datainrdy, "traces/M_datainrdy_int.seq");
+            //$trace(dataout, "traces/M_dataout_int.seq");
+            //$trace(dataoutrdy, "traces/M_dataoutrdy_int.seq");
 
           reg bus_ackr : ns(1);
           reg bus_rdyr : ns(1);
@@ -710,17 +881,26 @@ fsm Output_cntrl(Output){
 // System connections
 //////////////
 system CPUsystem{
+  register(C, A);
+  increment(A, B);
+  brmux(B,brsel,C);
+  inst(A, D);
+  registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
+  control(D[31:29], brsel, storeenable, opsel, addsel, datsel);
+  addmux(b_out, D[22:15], addsel, addmux_out);
+  alu(a_out, addmux_out, opsel, alu_out);
+  datmux(alu_out, D, datsel, datmux_out);//TODO mem_out (D)
 
-   CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
+  CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
 
-   bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
-           DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
-           SensorDatain,SensorDatainrdy,SensorDataout,SensorCmdout,SensorDataoutrdy,SensorStall,  // slave (sensor)
-           OPDatain,OPDatainrdy,OPDataout,OPCmdout,OPDataoutrdy,OPStall); // slave (Output)
+  bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
+    DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
+    SensorDatain,SensorDatainrdy,SensorDataout,SensorCmdout,SensorDataoutrdy,SensorStall,  // slave (sensor)
+    OPDatain,OPDatainrdy,OPDataout,OPCmdout,OPDataoutrdy,OPStall); // slave (Output)
 
-   DataMem(DMDataout,DMCmdout,DMDataoutrdy,DMDatain,DMDatainrdy,DMStall); // Data Memory Unit
+  DataMem(DMDataout,DMCmdout,DMDataoutrdy,DMDatain,DMDatainrdy,DMStall); // Data Memory Unit
 
-   Sensor(SensorDataout,SensorCmdout,SensorDataoutrdy,SensorDatain,SensorDatainrdy,SensorStall);
+  Sensor(SensorDataout,SensorCmdout,SensorDataoutrdy,SensorDatain,SensorDatainrdy,SensorStall);
 
-   Output(OPDataout,OPCmdout,OPDataoutrdy,OPDatain,OPDatainrdy,OPStall,FilterOut);
+  Output(OPDataout,OPCmdout,OPDataoutrdy,OPDatain,OPDatainrdy,OPStall,FilterOut);
 }
