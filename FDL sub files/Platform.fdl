@@ -137,7 +137,8 @@ dp registerfile(
 	reg r1,r2,r3,r4,r5,r6,r7:tc(32);
 	always{
     $display("REGISTERFILE: storesel=",storesel ," asel=", asel, ", bsel=", bsel, ", storeenable=", storeenable);
-    $display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out);
+
+    //$display("REGISTERFILE: a_sel=")
 		//Select A
 		a_out = (asel==1) ? r1 :
 		(asel==2) ? r2 :
@@ -163,6 +164,8 @@ dp registerfile(
 		r5 = (storeenable & storesel==5) ? storedata : r5;
 		r6 = (storeenable & storesel==6) ? storedata : r6;
 		r7 = (storeenable & storesel==7) ? storedata : r7;
+
+    $display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out, ", regs=" , r3, " ",r4, " ",r7, " ");
 	}
 }
 
@@ -902,12 +905,12 @@ system CPUsystem{
   inst(A, D);
   registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
   control(D[31:29], brsel, storeenable, opsel, addsel, datsel, storesel);
-  addmux(b_out, D[22:15], addsel, addmux_out);
+  addmux(b_out, D[22:14], addsel, addmux_out);
   alu(a_out, addmux_out, opsel, alu_out);
   datmux(alu_out, D, datsel, datmux_out);//TODO mem_out (D)
   cmdmux(b_out, storesel, cmdmux_out);
 
-  CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
+  CPU(CPUdatain,b_out,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
 
   bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
     DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
