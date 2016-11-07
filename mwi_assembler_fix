@@ -2,38 +2,34 @@
 //LOAD R5 0       		#(R5 = 0)
 
 0 NOP
-1 ADDI R4 R0 31 			#(R4 = 31   = i + 31)
-2 ADDI R7 R0 251			#(R7 = 251)
+1 ADDI R4 R0 -31 		#(R4 = -31   = i-31)
+2 ADDI R7 R0 251		#(R7 = 251)
 
-//3 LOAD R1 000 (R3)      		#(R1 = xi)
-//4 LOAD R2 000 (R4)      		#(R2 = xi+31)
-3 LOAD R1 (R3) 000      		#(R1 = xi)
+3 LOAD R1 (R3) 000      	#(R1 = xi)
 4 LOAD R2 (R4) 000     		#(R2 = xi+31)
-5 ADD R5 R5 R1    		#(R7 = R7 + xi)
-6 SUB R5 R5 R2    		#(R7 = R7 - xi+31)
+5 ADD R5 R5 R1    		#(R5 = R5 + xi)
+6 SUB R5 R5 R2    		#(R5 = R5 - xi-31)
 7 SR5 R6 R5       		#(Shift right 5 times, i.e. divide by 32. R6 = R5/32)
-8 STORE 000 R6 1(R7)   		#(Store average in memory location R7 (251...n). Store out of range of sample values)
+8 STORE 000 R6 (R7)   		#(Store average in memory location R7 (251...n). Store out of range of sample values)
 9 ADDI R3 R3 1 			#(Add 1 to input memory index, i. i + 1)
-a ADDI R4 R4 1  			#(Add 1 to input mempory index i+31. i+31 + 1)
+a ADDI R4 R4 1  		#(Add 1 to input mempory index i-31. i-31 + 1)
 b ADDI R7 R7 1			#(Add 1 to output memory index)
 c BRANCH	       		#(Loop back to inst-memory address 6 --> LOAD R1 R3)
 
 ************
 0 00000000...
-1 100 100 000 000 11111 *31* 			#(R4 = 31   = i + 31)
-2 100 111 000 111 11011 *251*			#(R7 = 251)
+1 100 100 000 000 11111 *31* 	#(R4 = 31   = i + 31)
+2 100 111 000 111 11011 *251*	#(R7 = 251)
 
-//3 001 001 000 (011)      		#(R1 = xi)
-//4 001 010 000 (100)      		#(R2 = xi+31)
-3 001 001 (011) 000     		#(R1 = xi)
-4 001 010 (100) 000      		#(R2 = xi+31)
-5 011 101 101 001    		#(R7 = R7 + xi)
-6 101 101 101 010    		#(R7 = R7 - xi+31)
+3 001 001 (011) 000     	#(R1 = xi)
+4 001 010 (100) 000      	#(R2 = xi+31)
+5 011 101 101 001    		#(R5 = R5 + xi)
+6 101 101 101 010    		#(R5 = R5 - xi+31)
 7 110 110 101       		#(Shift right 5 times, i.e. divide by 32. R6 = R5/32)
-8 010 000 110 1(111)  		#(Store average in memory location R7 (251...n). Store out of range of sample values)
-9 100 011 011 000 00001 			#(Add 1 to input memory index, i. i + 1)
-a 100 100 100 000 00001  			#(Add 1 to input mempory index i+31. i+31 + 1)
-b 100 111 111 000 00001			#(Add 1 to output memory index)
+8 010 000 110 (111)  		#(Store average in memory location R7 (251...n). Store out of range of sample values)
+9 100 011 011 000 00001 	#(Add 1 to input memory index, i. i + 1)
+a 100 100 100 000 00001  	#(Add 1 to input mempory index i+31. i+31 + 1)
+b 100 111 111 000 00001		#(Add 1 to output memory index)
 c 111        			#(Loop back to inst-memory address 6 --> LOAD R1 R3)
 
 
@@ -86,9 +82,9 @@ BRANCH:	[111]
 ############ NOTES #############
 R0 always contains 0
 R1 contains x_i.    The i'th input value
-R2 contains x_i+31  The i+31th input value
+R2 contains x_i-31  The i-31th input value
 R3 contains the read-input index value i
-R4 contains the read-input index value i+31
+R4 contains the read-input index value i-31
 R5 contains the sum of most 32 most recent input values.
 R6 contains the average, R5 divided by 32 (shifted 5). That is the i'th output, mwi_i.
 
