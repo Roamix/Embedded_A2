@@ -37,7 +37,6 @@ c 111        			#(Loop back to inst-memory address 6 --> LOAD R1 R3)
 ***OP CODE***
 NOP   : 000...0
 	storeenable = 0
-	brsel = 01
 
 LOAD  :	[001] [REG] [ADR]
 	storeenable = 1
