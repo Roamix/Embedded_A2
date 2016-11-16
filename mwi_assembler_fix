@@ -30,7 +30,7 @@ c BRANCH	       		#(Loop back to inst-memory address 6 --> LOAD R1 R3)
 9 100 011 011 000 00001 	#(Add 1 to input memory index, i. i + 1)
 a 100 100 100 000 00001  	#(Add 1 to input mempory index i-31. i-31 + 1)
 b 100 111 111 000 00001		#(Add 1 to output memory index)
-c 111        			#(Loop back to inst-memory address 6 --> LOAD R1 R3)
+c 111        			#(Loop back to inst-memory address 3 --> LOAD R1 R3)
 
 
 
@@ -64,13 +64,13 @@ SUB   :	[101] [REG] [REG] [REG]
 	storeenable = 1
 	addsel = 0
 	opsel = 01
-	
+
 
 SR5   :	[110] [REG] [REG]
 	storeenable = 1
 	addsel = 0
 	opsel = 10
-	
+
 
 BRANCH:	[111]
 	brsel = 10

@@ -1,6 +1,5 @@
 $option "vcd"
 
-
 //////////////
 // CPU
 //////////////
@@ -17,6 +16,17 @@ ipblock instmem(
   ipparm "file=instset.txt";
 }
 
+dp ifneg(
+  in input:tc(9);
+  out output:ns(9)
+){
+  always{
+    output = (input[9]) ? 251 : input;
+    //output = input;
+    $display("IFNEG: i: ", input, ", o: ", output);
+  }
+}
+
 dp inst(
   in address:ns(5);
   out data:ns(32)
@@ -28,12 +38,14 @@ dp inst(
     data = odata;
     $display($cycle);
 		$display("Inst No.: " , address, ", Inst: " ,$bin ,odata[31:29], " ", odata[28:26], " ", odata[25:23], " " , odata[22:20], " ", odata[19:0]);
+    $display("22:14 instruction: ", $bin, odata[22:14]);
     //$display("31:29 : " ,$bin,odata[31:29], ", 28:26 : ", odata[28:26], ", 25:23 : ", odata[25:23]);
   }
 }
 
 dp addmux(
-	in A, B: tc(32);
+	in A: tc(32);
+  in B: tc(9);
 	in s: ns(1);
 	out z : tc(32)
 	){
@@ -90,6 +102,9 @@ dp control (
             (op==0b110) ? 0b10 :
             ((op==0b010) | (op==0b001)) ? 0b11 : 0b00;
 
+            //if operation is load and number is positive
+            //this will stall
+    //load = (op==001 & ~negload); //TODO
     load = (op==001);
 
     brsel = (op==0b111) ? 0b10 :
@@ -111,7 +126,7 @@ dp brmux(
 	always{
     //$display("BRMUX: brsel=", z);
 		z = (s==0b00) ? regin + 1 :
-        (s==0b01) ? regin : 3;
+        (s==0b01) ? regin : 2;
 	}
 }
 
@@ -152,11 +167,11 @@ dp increment(
 dp registerfile(
 	in asel,bsel,storesel:ns(3);
 	in storeenable:ns(1);
-	in storedata:ns(32);
+	in storedata:tc(32);
 
-	out a_out, b_out:ns(32)
+	out a_out, b_out:tc(32)
   ){
-	reg r1,r2,r3,r4,r5,r6,r7:ns(32);
+	reg r1,r2,r3,r4,r5,r6,r7:tc(32);
 	always{
     //$display("REGISTERFILE: a_sel=")
 		//Select A
@@ -186,16 +201,16 @@ dp registerfile(
 		r7 = (storeenable & storesel==7) ? storedata : r7;
 
     $display("REGISTERS: ",$dec,r1," : ",$dec,r2," : ",$dec,r3," : ",$dec,r4," : ",$dec,r5," : ",$dec,r6," : ",$dec,r7);
-    //$display("REGISTERFILE: storesel=",storesel ," asel=", asel, ", bsel=", bsel, ", storeenable=", storeenable);
+    $display("REGISTERFILE: storesel= ",storesel,", storeenable= ", storeenable, ", data= ",$dec, storedata);
     //$display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out, ", regs=" , r3, " ",r4, " ",r7, " ");
     //$display("REGISTERFILE: storeenable=", storeenable, ", storesel=",storesel,", asel=", asel,", a_out=", a_out,", bsel=", bsel, ", b_out=", b_out);
 	}
 }
 
 dp alu(
-	in A, B : ns(32);
+	in A, B : tc(32);
 	in s: ns(2);
-	out C : ns(32)
+	out C : tc(32)
   ){
 	always{
 		C = (s==0b00) ? A + B :
@@ -222,26 +237,28 @@ dp CPU(
     sig load, stall,datainrdy, storesel, datsel,addsel,storeenable:ns(1);
     sig opsel,brsel : ns(2);
     sig D,alu_out,addmux_out,datmux_out,cmdmux_out,a_out,b_out:ns(32);
+    sig negfix_out:ns(9);
 
 
     //wiring
     use register(C, A);
-    //use increment(A, B);
     use brmux(A,brsel,C);
     use inst(C, D);
     use registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
     use control(D[31:29], stall, brsel, storeenable, opsel, addsel, datsel, storesel, datainrdy, load);
     use stallreg(M_datainrdy, M_dataoutrdy, load, stall);
-    use addmux(b_out, D[22:15], addsel, addmux_out);
+    //use addmux(b_out, D[22:15], addsel, addmux_out);
+    use addmux(b_out, D[22:14], addsel, addmux_out);
     use alu(a_out, addmux_out, opsel, alu_out);
     use datmux(alu_out, M_dataout, datsel, datmux_out);//TODO mem_out (D)
     use cmdmux(b_out, storesel, cmdmux_out);
+    use ifneg(cmdmux_out, negfix_out);
 
- 		// Please remove the code below (it is only added such that that the platform can run without faults)
     always{
       //$display("CPU: M_datain=", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel);
    		M_datain = alu_out;
-   		M_cmd = cmdmux_out;
+   		//M_cmd = cmdmux_out;
+      M_cmd = negfix_out;
       M_datainrdy = datainrdy;
       $display("CPU-out: M_datainrdy=  ", M_datainrdy, ", M_datain= ", M_datain , ", M_cmd=",M_cmd);
       $display("CPU-in:  M_dataoutrdy= ", M_dataoutrdy, ", M_dataout=", M_dataout);
@@ -928,19 +945,6 @@ fsm Output_cntrl(Output){
 // System connections
 //////////////
 system CPUsystem{
-  /*
-  register(C, A);
-  inst(C, D);
-  registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out); //TODO storedata (D)
-  stallreg(CPUdatainrdy, CPUdataoutrdy, load, stall);
-  control(D[31:29], stall, brsel, storeenable, opsel, addsel, datsel, storesel, datainrdy, load);
-  brmux(A,brsel,C);
-  addmux(b_out, D[22:15], addsel, addmux_out);
-  alu(a_out, addmux_out, opsel, alu_out);
-  datmux(alu_out, CPUdataout, datsel, datmux_out);//TODO mem_out (D)
-  cmdmux(b_out, storesel, cmdmux_out);
-  */
-
   bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
     DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
     SensorDatain,SensorDatainrdy,SensorDataout,SensorCmdout,SensorDataoutrdy,SensorStall,  // slave (sensor)
