@@ -23,7 +23,7 @@ dp ifneg(
   always{
     output = (input[9]) ? 251 : input;
     //output = input;
-    $display("IFNEG: i: ", input, ", o: ", output);
+    $display("IFNEG: i: ",$dec, input, ", o: ",$dec, output);
   }
 }
 
@@ -63,7 +63,7 @@ dp datmux(
 
 	always{
 		z = (s==0) ? A : B;
-    //$display("DATMUX: datsel=",$dec, s);
+    $display("DATMUX: B=",$dec, B);
 	}
 }
 
@@ -108,7 +108,7 @@ dp control (
     brsel = (op==0b111) ? 0b10 :
             (stall) ? 0b01 : 0 ;
 
-    storeenable = (op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110); //TODO disable on stall
+    storeenable = ((op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110)) & ~stall;
 
     datainrdy = ((op==0b001) | (op==0b010));
     //$display("CONTROL: rec: ", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel, ", stall=", stall, ", brsel=", brsel);
@@ -201,6 +201,7 @@ dp registerfile(
     $display("REGISTERS: ",$dec,r1," : ",$dec,r2," : ",$dec,r3," : ",$dec,r4," : ",$dec,r5," : ",$dec,r6," : ",$dec,r7);
     $display("REGISTERFILE: storesel= ",storesel,", storeenable= ", storeenable, ", data= ",$dec, storedata);
     $display("REGISTERFILE: a_sel= ", asel, ", a_out= ", a_out);
+    $display("REGISTERFILE: b_sel= ", bsel, ", b_out= ", b_out);
     //$display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out, ", regs=" , r3, " ",r4, " ",r7, " ");
     //$display("REGISTERFILE: storeenable=", storeenable, ", storesel=",storesel,", asel=", asel,", a_out=", a_out,", bsel=", bsel, ", b_out=", b_out);
 	}
@@ -213,7 +214,7 @@ dp alu(
   ){
 	always{
 		C = (s==0b00) ? A + B :
-		(s==0b01) ? B - A :
+		(s==0b01) ? A - B :
 		(s==0b10)	? A >> 5:
 		(s==0b11) ? A : 0;
     $display("ALU: operation: ", $dec,s, ", A: ", $dec,A, ", B: ", $dec,B, ", C: ", $dec,C);
@@ -236,7 +237,7 @@ dp CPU(
     sig load, stall,datainrdy, storesel, datsel,addsel,storeenable:ns(1);
     sig opsel,brsel : ns(2);
     sig D,alu_out,addmux_out,datmux_out,cmdmux_out,a_out,b_out:ns(32);
-    sig negfix_out:ns(9);
+    sig ifneg_out:ns(32);
 
 
     //wiring
@@ -246,17 +247,15 @@ dp CPU(
     use registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out);
     use control(D[31:29], stall, brsel, storeenable, opsel, addsel, datsel, storesel, datainrdy, load);
     use stallreg(M_datainrdy, M_dataoutrdy, load, stall);
-    //use addmux(b_out, D[22:15], addsel, addmux_out);
     use addmux(b_out, D[22:14], addsel, addmux_out);
-    use ifneg(a_out, negfix_out);
-    use alu(negfix_out, addmux_out, opsel, alu_out);
-
+    use alu(a_out, addmux_out, opsel, alu_out);
+    use ifneg(alu_out, ifneg_out);
     use datmux(alu_out, M_dataout, datsel, datmux_out);//TODO mem_out (D)
     use cmdmux(b_out, storesel, cmdmux_out);
 
     always{
       //$display("CPU: M_datain=", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel);
-   		M_datain = alu_out;
+   		M_datain = ifneg_out;
       M_cmd = cmdmux_out;
       M_datainrdy = datainrdy;
       $display("CPU-out: M_datainrdy=  ", M_datainrdy, ", M_datain= ", M_datain , ", M_cmd=",M_cmd);
@@ -265,9 +264,9 @@ dp CPU(
     }
 }
 
-//////////////
+////////////////////////////
 // Bus
-//////////////
+////////////////////////////
 
 dp bus(
         // CPU interface
@@ -350,7 +349,6 @@ dp bus(
 
         always{
           ackCPU = (cmdCPU[28:31] == ID_DataMem & ackDataMem) | (cmdCPU[28:31] == ID_Sensor & ackSensor) | (cmdCPU[28:31] == ID_Output & ackOutput); // "OR" all slaves ack signals here
-          $display("BUS: DataMem chosen=",cmdCPU[28:31]==ID_DataMem, ", ackDataMem=", ackDataMem);
           dataRdyCPU = dataRdyDataMem | dataRdySensor | dataRdyOutput; // Only one slave can access the bus at any one time (only the slave which responds to the cmd)
 
           reqDataMem = reqCPU;
@@ -373,7 +371,6 @@ dp bus(
           waitDataMem = waitCPU;
 
           NotUsed1 = 0;
-
         }
 }
 
@@ -480,6 +477,7 @@ fsm slavebusinterface_cntrl(slavebusinterface){
        else (nothing) -> s2;
    @s3 if (bus_waitr == 1) then (ackInternalData) -> s0;
        else (internalData) -> s3;
+
 }
 
 dp slavebusinterface2 : slavebusinterface
@@ -504,19 +502,19 @@ dp masterbusinterface(
           out dataoutrdy : ns(1) // signal to master telling that the data on dataout is rdy
           ){
 
-            //$trace(bus_req, "traces/M_bus_req.seq");
-            //$trace(bus_cmd, "traces/M_bus_cmd.seq");
-            //$trace(bus_dataout, "traces/M_bus_dataout.seq");
-            //$trace(bus_ack, "traces/M_bus_ack.seq");
-            //$trace(bus_rdy, "traces/M_bus_rdy.seq");
-            //$trace(bus_datain, "traces/M_bus_datain.seq");
-            //$trace(bus_wait, "traces/M_bus_wait.seq");
+//          $trace(bus_req, "traces/M_bus_req.seq");
+//          $trace(bus_cmd, "traces/M_bus_cmd.seq");
+//          $trace(bus_dataout, "traces/M_bus_dataout.seq");
+//          $trace(bus_ack, "traces/M_bus_ack.seq");
+//          $trace(bus_rdy, "traces/M_bus_rdy.seq");
+//          $trace(bus_datain, "traces/M_bus_datain.seq");
+//          $trace(bus_wait, "traces/M_bus_wait.seq");
 
-            //$trace(datain, "traces/M_datain_int.seq");
-            //$trace(cmd, "traces/M_cmd_int.seq");
-            //$trace(datainrdy, "traces/M_datainrdy_int.seq");
-            //$trace(dataout, "traces/M_dataout_int.seq");
-            //$trace(dataoutrdy, "traces/M_dataoutrdy_int.seq");
+//          $trace(datain, "traces/M_datain_int.seq");
+//          $trace(cmd, "traces/M_cmd_int.seq");
+//          $trace(datainrdy, "traces/M_datainrdy_int.seq");
+//          $trace(dataout, "traces/M_dataout_int.seq");
+//          $trace(dataoutrdy, "traces/M_dataoutrdy_int.seq");
 
           reg bus_ackr : ns(1);
           reg bus_rdyr : ns(1);
@@ -530,7 +528,6 @@ dp masterbusinterface(
              datainrdyr = datainrdy;
              cmdr = cmd;
              datainr = datain;
-             //$display("MASTERBUSINTERFACE: bus_ack=", bus_ack, ", bus_rdy=", bus_rdy,", datainrdy=",datainrdy,", cmd=",cmd, ", datain=",datain);
           }
 
           sfg internalData{
@@ -605,7 +602,7 @@ dp bus_toplevel(
            in M_datainrdy : ns(1);
            out M_dataout : ns(32);
            out M_dataoutrdy : ns(1);
-           //out stall_cpu : ns(1); //TODO #!#
+           //out stall_cpu : ns(1);
 
            // Slave interface (datamemory)
            in DM_datain : ns(32);
@@ -685,9 +682,9 @@ dp bus_toplevel(
            }
 }
 
-//////////////
+////////////////////////////
 // Auxiliary units
-//////////////
+////////////////////////////
 ipblock datamem(in address : ns(12);
           in wr,rd   : ns(1);
           in idata   : ns(32);
@@ -732,6 +729,7 @@ dp DataMem(
        wr = cmdr[27] == 1;
        address = (cmdr[27] == 0) ? datainr : 0b00000 # cmdr[0:26]; // if Store Word instruction, use cmd[0:26] as address. If Load Word instruction use datain as address
        idata = (cmdr[27] == 0) ? 0 : datainr; // if store word use datain as data to be stored, if load word, just set idata to 0
+       //$display($dec, "Cycle: ", $cycle);
    	   //$display($dec, "   address: ", address);
    }
 
@@ -940,20 +938,19 @@ fsm Output_cntrl(Output){
 
 }
 
-//////////////
+////////////////////////////
 // System connections
-//////////////
+////////////////////////////
 system CPUsystem{
-  bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
-    DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
-    SensorDatain,SensorDatainrdy,SensorDataout,SensorCmdout,SensorDataoutrdy,SensorStall,  // slave (sensor)
-    OPDatain,OPDatainrdy,OPDataout,OPCmdout,OPDataoutrdy,OPStall); // slave (Output)
 
-  CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
+   CPU(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy);
 
-  DataMem(DMDataout,DMCmdout,DMDataoutrdy,DMDatain,DMDatainrdy,DMStall); // Data Memory Unit
+   bus_toplevel(CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy, // master unit
+           DMDatain,DMDatainrdy,DMDataout,DMCmdout,DMDataoutrdy,DMStall, // slave (data memory)
+           SensorDatain,SensorDatainrdy,SensorDataout,SensorCmdout,SensorDataoutrdy,SensorStall,  // slave (sensor)
+           OPDatain,OPDatainrdy,OPDataout,OPCmdout,OPDataoutrdy,OPStall); // slave (Output)
 
-  Sensor(SensorDataout,SensorCmdout,SensorDataoutrdy,SensorDatain,SensorDatainrdy,SensorStall);
-
-  Output(OPDataout,OPCmdout,OPDataoutrdy,OPDatain,OPDatainrdy,OPStall,FilterOut);
+   DataMem(DMDataout,DMCmdout,DMDataoutrdy,DMDatain,DMDatainrdy,DMStall); // Data Memory Unit
+   Sensor(SensorDataout,SensorCmdout,SensorDataoutrdy,SensorDatain,SensorDatainrdy,SensorStall);
+   Output(OPDataout,OPCmdout,OPDataoutrdy,OPDatain,OPDatainrdy,OPStall,FilterOut);
 }

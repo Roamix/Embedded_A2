@@ -23,7 +23,7 @@ dp ifneg(
   always{
     output = (input[9]) ? 251 : input;
     //output = input;
-    $display("IFNEG: i: ", input, ", o: ", output);
+    $display("IFNEG: i: ",$dec, input, ", o: ",$dec, output);
   }
 }
 
@@ -63,7 +63,7 @@ dp datmux(
 
 	always{
 		z = (s==0) ? A : B;
-    //$display("DATMUX: datsel=",$dec, s);
+    $display("DATMUX: B=",$dec, B);
 	}
 }
 
@@ -108,7 +108,7 @@ dp control (
     brsel = (op==0b111) ? 0b10 :
             (stall) ? 0b01 : 0 ;
 
-    storeenable = (op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110); //TODO disable on stall
+    storeenable = ((op==0b001)|(op==0b011)|(op==0b100)|(op==0b101)|(op==0b110)) & ~stall;
 
     datainrdy = ((op==0b001) | (op==0b010));
     //$display("CONTROL: rec: ", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel, ", stall=", stall, ", brsel=", brsel);
@@ -201,6 +201,7 @@ dp registerfile(
     $display("REGISTERS: ",$dec,r1," : ",$dec,r2," : ",$dec,r3," : ",$dec,r4," : ",$dec,r5," : ",$dec,r6," : ",$dec,r7);
     $display("REGISTERFILE: storesel= ",storesel,", storeenable= ", storeenable, ", data= ",$dec, storedata);
     $display("REGISTERFILE: a_sel= ", asel, ", a_out= ", a_out);
+    $display("REGISTERFILE: b_sel= ", bsel, ", b_out= ", b_out);
     //$display("REGISTERFILE: a_out=", a_out, ", b_out=", b_out, ", regs=" , r3, " ",r4, " ",r7, " ");
     //$display("REGISTERFILE: storeenable=", storeenable, ", storesel=",storesel,", asel=", asel,", a_out=", a_out,", bsel=", bsel, ", b_out=", b_out);
 	}
@@ -213,7 +214,7 @@ dp alu(
   ){
 	always{
 		C = (s==0b00) ? A + B :
-		(s==0b01) ? B - A :
+		(s==0b01) ? A - B :
 		(s==0b10)	? A >> 5:
 		(s==0b11) ? A : 0;
     $display("ALU: operation: ", $dec,s, ", A: ", $dec,A, ", B: ", $dec,B, ", C: ", $dec,C);
@@ -236,7 +237,7 @@ dp CPU(
     sig load, stall,datainrdy, storesel, datsel,addsel,storeenable:ns(1);
     sig opsel,brsel : ns(2);
     sig D,alu_out,addmux_out,datmux_out,cmdmux_out,a_out,b_out:ns(32);
-    sig negfix_out:ns(9);
+    sig ifneg_out:ns(32);
 
 
     //wiring
@@ -246,17 +247,15 @@ dp CPU(
     use registerfile(D[25:23], D[22:20], D[28:26], storeenable, datmux_out ,a_out, b_out);
     use control(D[31:29], stall, brsel, storeenable, opsel, addsel, datsel, storesel, datainrdy, load);
     use stallreg(M_datainrdy, M_dataoutrdy, load, stall);
-    //use addmux(b_out, D[22:15], addsel, addmux_out);
     use addmux(b_out, D[22:14], addsel, addmux_out);
-    use ifneg(a_out, negfix_out);
-    use alu(negfix_out, addmux_out, opsel, alu_out);
-
+    use alu(a_out, addmux_out, opsel, alu_out);
+    use ifneg(alu_out, ifneg_out);
     use datmux(alu_out, M_dataout, datsel, datmux_out);//TODO mem_out (D)
     use cmdmux(b_out, storesel, cmdmux_out);
 
     always{
       //$display("CPU: M_datain=", $bin ,op,", opsel=" , $dec, opsel, ", addsel=", addsel);
-   		M_datain = alu_out;
+   		M_datain = ifneg_out;
       M_cmd = cmdmux_out;
       M_datainrdy = datainrdy;
       $display("CPU-out: M_datainrdy=  ", M_datainrdy, ", M_datain= ", M_datain , ", M_cmd=",M_cmd);

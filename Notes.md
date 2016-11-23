@@ -190,6 +190,14 @@ git add . ; git commit -m "Message to the main"; git push -u origin master
 git pull origin master
 ```
 
+## Links
+[DEC/BIN/HEX Converter](https://conv.darkbyte.ru)
+[Two's complement converter](http://www.exploringbinary.com/twos-complement-converter/)
+[BitLength Converter](https://mothereff.in/byte-counter)
+[Hex to Bin](http://www.binaryhexconverter.com/hex-to-binary-converter)
+[Bin to Hex](http://www.binaryhexconverter.com/binary-to-hex-converter)
+
+
 ## Report Structure
 * Front cover
 	- Group: Name, Student No, Signature
