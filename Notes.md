@@ -174,20 +174,25 @@ The figure also shows the targetID value for each of the 3 slaves in the system.
 
 ==Remember to CD to directory!==
 
-###Push
+### Push
 ```
 git add .
 git commit -m "comment"
 git push -u origin master
 ```
-####1 liner:
+#### 1 liner:
 ```
 git add . ; git commit -m "Message to the main"; git push -u origin master
 ```
 
-###Pull
+### Pull
 ```
 git pull origin master
+```
+
+### MacOS xcode issue
+```
+sudo xcodebuild -license
 ```
 
 ## Links

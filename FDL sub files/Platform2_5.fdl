@@ -16,17 +16,6 @@ ipblock instmem(
   ipparm "file=instset.txt";
 }
 
-dp ifneg(
-  in input:tc(32);
-  out output:ns(32)
-){
-  always{
-    output = (input[9]) ? 251 : input;
-    //output = input;
-    $display("IFNEG: i: ",$dec, input, ", o: ",$dec, output);
-  }
-}
-
 dp inst(
   in address:ns(5);
   out data:ns(32)
@@ -40,6 +29,18 @@ dp inst(
 		$display("Inst No.: " , address, ", Inst: " ,$bin ,odata[31:29], " ", odata[28:26], " ", odata[25:23], " " , odata[22:20], " ", odata[19:0]);
     //$display("22:14 instruction: ", $bin, odata[22:14]);
     //$display("31:29 : " ,$bin,odata[31:29], ", 28:26 : ", odata[28:26], ", 25:23 : ", odata[25:23]);
+  }
+}
+
+
+dp ifneg(
+  in input:tc(32);
+  out output:ns(32)
+){
+  always{
+    output = (input[9]) ? 251 : input;
+    //output = input;
+    $display("IFNEG: i: ",$dec, input, ", o: ",$dec, output);
   }
 }
 
@@ -171,7 +172,6 @@ dp registerfile(
   ){
 	reg r1,r2,r3,r4,r5,r6,r7:tc(32);
 	always{
-    //$display("REGISTERFILE: a_sel=")
 		//Select A
 		a_out = (asel==1) ? r1 :
 		(asel==2) ? r2 :
@@ -232,7 +232,7 @@ dp CPU(
   //out out_stall: ns(1)
   ){
  		// Implement your CPU here.
-    //CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy
+    // CPUdatain,CPUcmd,CPUdatainrdy,CPUdataout,CPUdataoutrdy
     sig A,B,C: ns(5);
     sig load, stall,datainrdy, storesel, datsel,addsel,storeenable:ns(1);
     sig opsel,brsel : ns(2);
